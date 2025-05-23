@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WikiSum.com – Wikipedia einfach erklärt</title>
+  <meta name="theme-color" content="#2c3e50" />
+  <link rel="apple-touch-icon" href="https://upload.wikimedia.org/wikipedia/commons/6/63/Wikipedia-logo.png" />
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.05);
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #2c3e50;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #1a252f;
+    }
+
+    textarea {
+      width: 100%;
+      height: 220px;
+      margin-top: 15px;
+      padding: 12px;
+      font-size: 15px;
+      border-radius: 6px;
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      resize: vertical;
+    }
+
+    .loader {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #888;
+    }
+
+    .article-link {
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .article-link a {
+      color: #2c3e50;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>WikiSum.com</h1>
+    <p>🔍 Gib ein Thema ein (z. B. <em>Albert Einstein</em>) und erhalte eine kompakte Wikipedia-Zusammenfassung:</p>
+    <input id="titleInput" placeholder="Wikipedia-Titel eingeben..." />
+    <button onclick="fetchSummary()">🔎 Artikel zusammenfassen</button>
+    <div class="loader" id="loader" style="display:none;">⏳ Lädt Artikel...</div>
+
+    <textarea id="output" readonly placeholder="📝 Zusammenfassung erscheint hier..."></textarea>
+    <div class="article-link" id="articleLink"></div>
+  </div>
+
+  <script>
+    async function fetchSummary() {
+      const title = document.getElementById("titleInput").value.trim();
+      const output = document.getElementById("output");
+      const loader = document.getElementById("loader");
+      const articleLink = document.getElementById("articleLink");
+
+      output.value = "";
+      articleLink.innerHTML = "";
+      loader.style.display = "block";
+
+      if (!title) {
+        output.value = "⚠️ Bitte gib ein Thema ein.";
+        loader.style.display = "none";
+        return;
+      }
+
+      const langs = ["de", "en"];
+      let data = null;
+      let usedLang = "";
+
+      for (let lang of langs) {
+        try {
+          const res = await fetch(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+          if (res.ok) {
+            data = await res.json();
+            usedLang = lang;
+            break;
+          }
+        } catch (e) {}
+      }
+
+      if (!data) {
+        output.value = "❌ Artikel nicht gefunden in Deutsch oder Englisch.";
+      } else {
+        const text = data.extract || "Keine Zusammenfassung verfügbar.";
+        const sentences = text.split(/(?<=\.)\s/);
+        const summary = sentences.slice(0, 4).join(" ");
+
+        output.value = summary;
+        articleLink.innerHTML = `🔗 <a href="${data.content_urls.desktop.page}" target="_blank" rel="noopener">Ganzer Artikel auf Wikipedia (${usedLang.toUpperCase()})</a>`;
+      }
+
+      loader.style.display = "none";
+    }
+  </script>
+</body>
+</html>
